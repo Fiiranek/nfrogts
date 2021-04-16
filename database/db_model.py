@@ -50,6 +50,11 @@ class Database:
 
         else:
             result = query_results[0]
+            # check if token with this ADA amount is sold, if so send refunds
+            if result['status'] == 'sold':
+                # TODO - send refunds to buyer address
+                print('send refunds')
+                return
             # create update query and new (sold) status query
             update_query = {'amount': amount}
             new_status = {'$set': {'status': 'sold'}}
