@@ -1,5 +1,6 @@
 import pymongo
 from os import path
+from time import time
 
 
 class Database:
@@ -56,17 +57,57 @@ class Database:
                 print('send refunds')
                 return
             # create update query and new (sold) status query
-            update_query = {'amount': amount}
+            query = {'amount': amount}
             new_status = {'$set': {'status': 'sold'}}
             # update record to sold
-            self.collection.update_one(update_query, new_status)
+            self.collection.update_one(query, new_status)
             # TODO - mint token
             # TODO - send token to buyer
+            # TODO - send rest of ada to our wallet
             print('mint')
+            print('send token to buyer')
+            print('send rest of ada to our wallet')
+
+    def get_free_frog(self):
+        """ gets free frog from database, should be used only from API """
+        query = {'status': 'free'}
+        query_result = self.collection.find(query).sort('amount', 1).limit(1)
+        query_results = [result for result in query_result]
+
+        if len(query_results) > 0:
+            result = query_results[0]
+            return result
+        return False
+
+    def reserve_frog(self, frog_data):
+        """ reserves frog in database, should be used only from API """
+        amount = frog_data['amount']
+        query = {'amount': amount, 'status': 'free'}
+        query_result = self.collection.find(query)
+        query_results = [result for result in query_result]
+
+        current_timestamp = round(time())
+        reservation_expire_date = current_timestamp + (15 * 60)
+        # check if frog is free and amount of ADA is correct
+        if len(query_results) > 0:
+            new_status = {'$set': {'status': 'reserved', 'reservation_expire_date': reservation_expire_date}}
+            self.collection.update_one(query, new_status)
+            return True
+        return False
+
+    def check_if_any_frog_is_reserved(self):
+        """ checks if there is any reserved frog """
+        query = {'status': 'reserved'}
+        query_result = self.collection.find(query)
+        query_results = [result for result in query_result]
+        if len(query_results) > 0:
+            return True
+        return False
 
 
 if __name__ == "__main__":
     db = Database()
+    update_frogs_status(db)
     # siema = db.collection.find({})
     # counter = 0
     # for i in siema:
