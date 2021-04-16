@@ -40,15 +40,18 @@ class Database:
         # TODO - get address of utxo sender
         # utxo_data['amount'] should be in lovelace
         amount = utxo_data['amount'] / 1000000
-        query = {'amount': amount, 'status': 'free'}
+        query = {'amount': amount}
         found_document = self.collection.find(query)
         query_results = [result for result in found_document]
         if len(query_results) == 0:
             # TODO - send refunds to buyer address
             print('send refunds')
+            return
+
         else:
+            result = query_results[0]
             # create update query and new (sold) status query
-            update_query = {'amount': amount, 'status': 'free'}
+            update_query = {'amount': amount}
             new_status = {'$set': {'status': 'sold'}}
             # update record to sold
             self.collection.update_one(update_query, new_status)
@@ -59,4 +62,9 @@ class Database:
 
 if __name__ == "__main__":
     db = Database()
-    #db.match_utxo({'amount': 72111561})
+    # siema = db.collection.find({})
+    # counter = 0
+    # for i in siema:
+    #     counter+=1
+    # print(counter)
+    # db.match_utxo({'amount': 72111561})
