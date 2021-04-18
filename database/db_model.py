@@ -144,4 +144,6 @@ if __name__ == "__main__":
     # db.match_utxo({'amount': 72111561})
 
     while True:
-        db.check_all_utxos([{'amount': 11, 'utxo': 'jjjjjjjjjjjj'}, {'amount': 32195065, 'utxo': '1bb719e0aedabab1d74b0b549c770e99e557b9f5d7e6534030b727fc7691ace8'}])
+        #get all utxos
+        all_utxos = []
+        db.check_all_utxos(all_utxos)
