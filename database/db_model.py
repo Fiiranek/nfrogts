@@ -2,7 +2,7 @@ import pymongo
 from os import path
 from time import time
 import requests
-
+from .automint import get_utxos, refund_utxo, mint_and_send
 
 class Database:
 
@@ -18,6 +18,7 @@ class Database:
             "=true&w=majority")
         self.db = self.client[DB_NAME]
         self.collection = self.db[COLLECTION_NAME]
+        self.collection_address = '23456789'
 
     def read_credentials_file(self):
         basepath = path.dirname(__file__)
@@ -54,7 +55,7 @@ class Database:
             found_document = self.collection.find(query)
             query_results = [result for result in found_document]
             if len(query_results) == 0:
-                # TODO - send refunds to buyer address
+                refund_utxo(buyer_address) # will return True if successful
                 print('send refunds')
                 return
 
@@ -63,6 +64,7 @@ class Database:
                 # check if token with this ADA amount is sold, if so send refunds
                 if result['status'] == 'sold':
                     # TODO - send refunds to buyer address
+                    refund_utxo(buyer_address) # will return True if successful
                     print('send refunds')
                     return
                 # create update query and new (sold) status query
@@ -75,6 +77,7 @@ class Database:
                 # TODO - send rest of ada to our wallet
 
                 frog_id = result['frog_id']
+                mint_and_send(frog_id, buyer_address, self.collection_address) # will return True if successful
 
                 print(f'mint frog #{frog_id}')
                 print('send token to buyer')
@@ -144,6 +147,6 @@ if __name__ == "__main__":
     # db.match_utxo({'amount': 72111561})
 
     while True:
-        #get all utxos
-        all_utxos = []
-        db.check_all_utxos(all_utxos)
+        wallet_address = '1234567890'
+        all_utxos = get_utxos(wallet_address)
+        db.check_all_utxos(utxo)
