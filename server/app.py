@@ -22,7 +22,7 @@ def read_api_key_from_file():
 
 
 API_KEY = read_api_key_from_file()
-print(API_KEY)
+
 
 def validate_api_key(req):
     if req.headers.get('API_KEY') == API_KEY:
@@ -32,7 +32,6 @@ def validate_api_key(req):
 
 @app.route('/reserveFrog', methods=['POST'])
 def reserveFrog():
-    print(request.remote_addr)
     is_api_key_valid = validate_api_key(request)
     if is_api_key_valid:
         frog_data = request.json
