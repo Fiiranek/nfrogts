@@ -1,6 +1,7 @@
 import pymongo
 from os import path
 from time import time
+import requests
 
 
 class Database:
@@ -36,37 +37,50 @@ class Database:
         db_credentials_file.close()
         return {'username': USERNAME, 'password': PASSWORD, 'db_name': DB_NAME, 'collection_name': COLLECTION_NAME}
 
+    def check_all_utxos(self, utxos):
+        for utxo_data in utxos:
+            self.match_utxo(utxo_data)
+
     def match_utxo(self, utxo_data):
         """ checks if utxo amount matches record in database """
-        # TODO - get address of utxo sender
-        # utxo_data['amount'] should be in lovelace
-        amount = utxo_data['amount'] / 1000000
-        query = {'amount': amount}
-        found_document = self.collection.find(query)
-        query_results = [result for result in found_document]
-        if len(query_results) == 0:
-            # TODO - send refunds to buyer address
-            print('send refunds')
-            return
 
-        else:
-            result = query_results[0]
-            # check if token with this ADA amount is sold, if so send refunds
-            if result['status'] == 'sold':
+        # get address of buyer from utxo
+        buyer_address = self.get_buyer_address_from_utxo(utxo_data['utxo'])
+        if buyer_address:
+            print(f'buyer address: {buyer_address}')
+            # utxo_data['amount'] should be in lovelace
+            amount = int(utxo_data['amount']) / 1000000
+            query = {'amount': amount}
+            found_document = self.collection.find(query)
+            query_results = [result for result in found_document]
+            if len(query_results) == 0:
                 # TODO - send refunds to buyer address
                 print('send refunds')
                 return
-            # create update query and new (sold) status query
-            query = {'amount': amount}
-            new_status = {'$set': {'status': 'sold'}}
-            # update record to sold
-            self.collection.update_one(query, new_status)
-            # TODO - mint token
-            # TODO - send token to buyer
-            # TODO - send rest of ada to our wallet
-            print('mint')
-            print('send token to buyer')
-            print('send rest of ada to our wallet')
+
+            else:
+                result = query_results[0]
+                # check if token with this ADA amount is sold, if so send refunds
+                if result['status'] == 'sold':
+                    # TODO - send refunds to buyer address
+                    print('send refunds')
+                    return
+                # create update query and new (sold) status query
+                query = {'amount': amount}
+                new_status = {'$set': {'status': 'sold'}, "$unset": {"reservation_expire_date": ""}, }
+
+                self.collection.update_one(query, new_status)
+                # TODO - mint token
+                # TODO - send token to buyer
+                # TODO - send rest of ada to our wallet
+
+                frog_id = result['frog_id']
+
+                print(f'mint frog #{frog_id}')
+                print('send token to buyer')
+                print('send rest of ada to our wallet')
+        else:
+            print('cant get buyer address')
 
     def get_free_frog(self):
         """ gets free frog from database, should be used only from API """
@@ -104,13 +118,30 @@ class Database:
             return True
         return False
 
+    def get_buyer_address_from_utxo(self, utxo):
+        try:
+            r = requests.get(f"https://cardanoscan.io/transaction/{utxo}")
 
+            content = r.content.decode("utf-8").split(
+                'FROM ADDRESSES (INPUTS)</span></div></div><div class=mt-4><div class="d-flex flex-row '
+                'justify-content-between px-3"><div><strong>Address</strong></div><div><strong>Amount</strong></div></div><hr class=darkHR><div data-simplebar><div class="d-flex flex-row justify-content-between px-2"><div class=addressField><div class="row align-items-center"><div class=col-auto>')
+            sub = content[1].split("span")
+            address = sub[0]
+            address = address.replace("<a href=/address/", "").replace("><", "")
+            return address
+        except:
+            return False
+
+
+db = Database()
 if __name__ == "__main__":
-    db = Database()
-    update_frogs_status(db)
+
     # siema = db.collection.find({})
     # counter = 0
     # for i in siema:
     #     counter+=1
     # print(counter)
     # db.match_utxo({'amount': 72111561})
+
+    while True:
+        db.check_all_utxos([{'amount': 11, 'utxo': 'jjjjjjjjjjjj'}, {'amount': 32195065, 'utxo': '1bb719e0aedabab1d74b0b549c770e99e557b9f5d7e6534030b727fc7691ace8'}])
