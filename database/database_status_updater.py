@@ -1,6 +1,6 @@
 import time
-from database.db_model import Database, db
-
+from db_model import Database
+db=Database()
 
 def update_frogs_status(db):
     """ checks if frog reserve date expired """
@@ -19,3 +19,4 @@ if __name__ == "__main__":
     while True:
         update_frogs_status(db)
         time.sleep(1)
+        #print('db sttaus updater working')

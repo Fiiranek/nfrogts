@@ -1,8 +1,8 @@
 import pymongo
 from os import path
-from time import time
+from time import time,sleep
 import requests
-from .automint import get_utxos, refund_utxo, mint_and_send
+from transactions import get_utxos, refund_utxo, mint_and_send
 
 class Database:
 
@@ -55,30 +55,43 @@ class Database:
             found_document = self.collection.find(query)
             query_results = [result for result in found_document]
             if len(query_results) == 0:
-                refund_utxo(buyer_address) # will return True if successful
-                print('send refunds')
+                try:
+                    success = refund_utxo(buyer_address, utxo_data['utxo']) # will return True if successful
+                except AttributeError as e:
+                    success = False
+                if success:
+                    print('send refunds')
                 return
 
             else:
                 result = query_results[0]
                 # check if token with this ADA amount is sold, if so send refunds
                 if result['status'] == 'sold':
-                    # TODO - send refunds to buyer address
-                    refund_utxo(buyer_address) # will return True if successful
-                    print('send refunds')
+                    try:
+                        success = refund_utxo(buyer_address, utxo_data['utxo']) # will return True if successful
+                    except AttributeError as e:
+                        success = False
+                    if success:
+                        print('send refunds')
                     return
                 # create update query and new (sold) status query
                 query = {'amount': amount}
                 new_status = {'$set': {'status': 'sold'}, "$unset": {"reservation_expire_date": ""}, }
 
-                self.collection.update_one(query, new_status)
                 # TODO - mint token
                 # TODO - send token to buyer
                 # TODO - send rest of ada to our wallet
 
                 frog_id = result['frog_id']
-                mint_and_send(frog_id, buyer_address, self.collection_address) # will return True if successful
+                try:
+                    success = mint_and_send(frog_id, utxo_data['utxo'], buyer_address) # will return True if successful
+                except AttributeError as e:
+                    success = False
+                if not success:
+                    print(f'frog #{frog_id} failed to send')
+                    return
 
+                self.collection.update_one(query, new_status)
                 print(f'mint frog #{frog_id}')
                 print('send token to buyer')
                 print('send rest of ada to our wallet')
@@ -147,6 +160,6 @@ if __name__ == "__main__":
     # db.match_utxo({'amount': 72111561})
 
     while True:
-        wallet_address = '1234567890'
-        all_utxos = get_utxos(wallet_address)
-        db.check_all_utxos(utxo)
+        all_utxos = get_utxos()
+        db.check_all_utxos(all_utxos)
+        sleep(20)
