@@ -1,7 +1,6 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS, cross_origin
-from database.db_model import Database
-from os import path
+from flask import Flask, request
+from flask_cors import CORS
+from server.db_model import Database
 
 app = Flask(__name__)
 cors = CORS(app)
