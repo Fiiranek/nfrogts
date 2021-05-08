@@ -116,6 +116,12 @@ class Database:
             return result
         return False
 
+    def get_sold_tokens_number(self):
+        """ return number of sold tokens """
+        query = {'status': 'sold'}
+        sold_tokens_number = self.collection.count_documents(query)
+        return sold_tokens_number
+
     def reserve_token(self, token_data):
         """ reserves token in database, should be used only from API """
         amount = token_data['amount']
@@ -156,15 +162,9 @@ class Database:
             return False
 
 
-db = Database()
-if __name__ == "__main__":
 
-    # siema = db.collection.find({})
-    # counter = 0
-    # for i in siema:
-    #     counter+=1
-    # print(counter)
-    # db.match_utxo({'amount': 72111561})
+if __name__ == "__main__":
+    db = Database()
 
     while True:
         logger.info('Querying UTXO')

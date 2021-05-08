@@ -10,24 +10,24 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 db = Database()
 
 
-def read_api_key_from_file():
-    basepath = path.dirname(__file__)
-    api_key_filepath = path.abspath(path.join(basepath, "..", "api_key.txt"))
-
-    api_key_file = open(api_key_filepath, "r")
-    for line in api_key_file:
-        FILE_API_KEY = line.replace("\n", "").split(" ")[1]
-    api_key_file.close()
-    return FILE_API_KEY
+# def read_api_key_from_file():
+#     basepath = path.dirname(__file__)
+#     api_key_filepath = path.abspath(path.join(basepath, "..", "api_key.txt"))
+#
+#     api_key_file = open(api_key_filepath, "r")
+#     for line in api_key_file:
+#         FILE_API_KEY = line.replace("\n", "").split(" ")[1]
+#     api_key_file.close()
+#     return FILE_API_KEY
 
 
 # API_KEY = read_api_key_from_file()
 
 
-def validate_api_key(req):
-    if req.headers.get('API_KEY') == API_KEY:
-        return True
-    return False
+# def validate_api_key(req):
+#     if req.headers.get('API_KEY') == API_KEY:
+#         return True
+#     return False
 
 
 @app.route('/reserve', methods=['POST'])
