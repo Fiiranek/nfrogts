@@ -90,23 +90,23 @@ class Database:
                 query = {'amount': amount}
                 new_status = {'$set': {'status': 'sold'}, "$unset": {"reservation_expire_date": ""}, }
 
-                frog_id = result['frog_id']
+                token_id = result['token_id']
                 try:
-                    success = mint_and_send(frog_id, utxo_data['utxo'], buyer_address) # will return True if successful
+                    success = mint_and_send(token_id, utxo_data['utxo'], buyer_address) # will return True if successful
                 except AttributeError as e:
                     success = False
 
                 if not success:
-                    logger.info(f'frog #{frog_id} failed to send successfully')
+                    logger.info(f'token #{token_id} failed to send successfully')
                     return
 
                 self.collection.update_one(query, new_status)
-                logger.info(f'frog #{frog_id} minted and sent to {buyer_address}')
+                logger.info(f'token #{token_id} minted and sent to {buyer_address}')
         else:
                 logger.info(f'Could not acquire return address for {utxo_data["utxo"]}')
 
-    def get_free_frog(self):
-        """ gets free frog from database, should be used only from API """
+    def get_free_token(self):
+        """ gets free token from database, should be used only from API """
         query = {'status': 'free'}
         query_result = self.collection.find(query).sort('amount', 1).limit(1)
         query_results = [result for result in query_result]
@@ -116,24 +116,24 @@ class Database:
             return result
         return False
 
-    def reserve_frog(self, frog_data):
-        """ reserves frog in database, should be used only from API """
-        amount = frog_data['amount']
+    def reserve_token(self, token_data):
+        """ reserves token in database, should be used only from API """
+        amount = token_data['amount']
         query = {'amount': amount, 'status': 'free'}
         query_result = self.collection.find(query)
         query_results = [result for result in query_result]
 
         current_timestamp = round(time())
         reservation_expire_date = current_timestamp + (3 * 60)
-        # check if frog is free and amount of ADA is correct
+        # check if token is free and amount of ADA is correct
         if len(query_results) > 0:
             new_status = {'$set': {'status': 'reserved', 'reservation_expire_date': reservation_expire_date}}
             self.collection.update_one(query, new_status)
             return True
         return False
 
-    def check_if_any_frog_is_reserved(self):
-        """ checks if there is any reserved frog """
+    def check_if_any_token_is_reserved(self):
+        """ checks if there is any reserved token """
         query = {'status': 'reserved'}
         query_result = self.collection.find(query)
         query_results = [result for result in query_result]

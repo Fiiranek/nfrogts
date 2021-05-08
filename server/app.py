@@ -21,7 +21,7 @@ def read_api_key_from_file():
     return FILE_API_KEY
 
 
-API_KEY = read_api_key_from_file()
+# API_KEY = read_api_key_from_file()
 
 
 def validate_api_key(req):
@@ -30,40 +30,30 @@ def validate_api_key(req):
     return False
 
 
-@app.route('/reserveFrog', methods=['POST'])
-def reserveFrog():
-    is_api_key_valid = validate_api_key(request)
-    if is_api_key_valid:
-        frog_data = request.json
-        frog_reservation = db.reserve_frog(frog_data)
-        if frog_reservation:
-            return {'msg': f'Frog {frog_data["frog_id"]} reserved'}
-        return {'msg': 'Frog NOT reserved'}
-    return {
-        'msg': 'Invalid api key'
-    }
+@app.route('/reserve', methods=['POST'])
+def reserve():
+    token_data = request.json
+    token_reservation = db.reserve_token(token_data)
+    if token_reservation:
+        return {'msg': f'Token {token_data["token_id"]} reserved'}
+    return {'msg': 'Token NOT reserved'}
 
 
-@app.route('/getFreeFrog')
-def getFreeFrog():
-    is_api_key_valid = validate_api_key(request)
-    if is_api_key_valid:
-        free_frog_data = db.get_free_frog()
-        if free_frog_data:
-            return {
-                'amount': free_frog_data['amount'],
-                'frog_id': free_frog_data['frog_id']
-            }
-        is_any_frog_reserved = db.check_if_any_frog_is_reserved()
-        if is_any_frog_reserved:
-            return {
-                'msg': 'All frogs reserved'
-            }
+@app.route('/getFree')
+def getFree():
+    free_token_data = db.get_free_token()
+    if free_token_data:
         return {
-            'msg': 'All frogs sold out'
+            'amount': free_token_data['amount'],
+            'token_id': free_token_data['token_id']
+        }
+    is_any_token_reserved = db.check_if_any_token_is_reserved()
+    if is_any_token_reserved:
+        return {
+            'msg': 'All tokens reserved'
         }
     return {
-        'msg': 'Invalid api key'
+        'msg': 'All tokens sold out'
     }
 
 
