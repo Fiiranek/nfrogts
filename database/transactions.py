@@ -81,14 +81,15 @@ def mint_and_send(frog_id, utxo_id, buyer_address):
     policy_script_fp = write_policy_script(PROJ_DIR, key_hash, force=False)
     policy_id = get_policy_id(policy_script_fp)
 
-    print(f'policy_id: {policy_id}')
+    # print(f'policy_id: {policy_id}')
 
     collection_receiver = utxo.convert_to_receiver(COLLECTION_ADDR)
     customer_receiver = TxReceiver(buyer_address)
     minting_receiver = MintingReceiver()
 
     # TODO: get name of asset
-    token_id = f'{policy_id}.testFrog{frog_id}'
+    #token_id = f'{policy_id}.testFrog{frog_id}' # TEST MODE
+    token_id = f'{policy_id}.NFROGT{frog_id}' # PRODUCTION MODE
     customer_receiver.add_native_token(token_id, 1)
     minting_receiver.add_native_token(token_id, 1)
 
@@ -97,7 +98,8 @@ def mint_and_send(frog_id, utxo_id, buyer_address):
     customer_receiver.add_lovelace(1650000)
     collection_receiver.remove_lovelace(1650000)
 
-    metadata_fp = os.path.join(METADATA_DIR, f'testFrog{frog_id}.json')
+    #metadata_fp = os.path.join(METADATA_DIR, f'testFrog{frog_id}.json') # TEST MODE
+    metadata_fp = os.path.join(METADATA_DIR, f'NFROGT{frog_id}.json') # PRODUCTION MODE
 
     assert os.path.exists(metadata_fp)
 
@@ -106,7 +108,9 @@ def mint_and_send(frog_id, utxo_id, buyer_address):
                                           list(map(lambda r: r.get_blank_receiver(), receivers)),
                                           policy_id,
                                           minting_receiver,
-                                          metadata=metadata_fp)
+                                          metadata=metadata_fp,
+                                          invalid_after=29000000,
+                                          script_path=policy_script_fp)
 
     fee = calculate_tx_fee(raw_matx_path, protocol_param_fp, utxo, receivers)
     collection_receiver.remove_lovelace(fee)
@@ -117,12 +121,13 @@ def mint_and_send(frog_id, utxo_id, buyer_address):
                                           policy_id,
                                           minting_receiver,
                                           fee=fee,
-                                          metadata=metadata_fp)
+                                          metadata=metadata_fp,
+                                          invalid_after=29000000,
+                                          script_path=policy_script_fp)
 
     signed_matx_path = sign_tx(TEMP_DIR,
                                [payment_wallet, policy_wallet],
-                               raw_matx_path,
-                               script_path=policy_script_fp)
+                               raw_matx_path)
 
     return submit_transaction(signed_matx_path)
 

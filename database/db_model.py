@@ -3,6 +3,18 @@ from os import path
 from time import time,sleep
 import requests
 from transactions import get_utxos, refund_utxo, mint_and_send
+import logging
+
+logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[
+                        logging.FileHandler('logfile.log', mode='a'),
+                        logging.StreamHandler()
+                    ])
+
+logger = logging.getLogger(__name__)
+
 
 class Database:
 
@@ -18,7 +30,6 @@ class Database:
             "=true&w=majority")
         self.db = self.client[DB_NAME]
         self.collection = self.db[COLLECTION_NAME]
-        self.collection_address = '23456789'
 
     def read_credentials_file(self):
         basepath = path.dirname(__file__)
@@ -48,7 +59,7 @@ class Database:
         # get address of buyer from utxo
         buyer_address = self.get_buyer_address_from_utxo(utxo_data['utxo'])
         if buyer_address:
-            print(f'buyer address: {buyer_address}')
+            logger.info(f'buyer address: {buyer_address}')
             # utxo_data['amount'] should be in lovelace
             amount = int(utxo_data['amount']) / 1000000
             query = {'amount': amount}
@@ -60,7 +71,7 @@ class Database:
                 except AttributeError as e:
                     success = False
                 if success:
-                    print('send refunds')
+                    logger.info(f'Refunds for {utxo_data["utxo"]} sent to {buyer_address}')
                 return
 
             else:
@@ -72,31 +83,27 @@ class Database:
                     except AttributeError as e:
                         success = False
                     if success:
-                        print('send refunds')
+                        logger.info(f'Refunds for {utxo_data["utxo"]} sent to {buyer_address}')
                     return
+
                 # create update query and new (sold) status query
                 query = {'amount': amount}
                 new_status = {'$set': {'status': 'sold'}, "$unset": {"reservation_expire_date": ""}, }
-
-                # TODO - mint token
-                # TODO - send token to buyer
-                # TODO - send rest of ada to our wallet
 
                 frog_id = result['frog_id']
                 try:
                     success = mint_and_send(frog_id, utxo_data['utxo'], buyer_address) # will return True if successful
                 except AttributeError as e:
                     success = False
+
                 if not success:
-                    print(f'frog #{frog_id} failed to send')
+                    logger.info(f'frog #{frog_id} failed to send successfully')
                     return
 
                 self.collection.update_one(query, new_status)
-                print(f'mint frog #{frog_id}')
-                print('send token to buyer')
-                print('send rest of ada to our wallet')
+                logger.info(f'frog #{frog_id} minted and sent to {buyer_address}')
         else:
-            print('cant get buyer address')
+                logger.info(f'Could not acquire return address for {utxo_data["utxo"]}')
 
     def get_free_frog(self):
         """ gets free frog from database, should be used only from API """
@@ -117,7 +124,7 @@ class Database:
         query_results = [result for result in query_result]
 
         current_timestamp = round(time())
-        reservation_expire_date = current_timestamp + (15 * 60)
+        reservation_expire_date = current_timestamp + (3 * 60)
         # check if frog is free and amount of ADA is correct
         if len(query_results) > 0:
             new_status = {'$set': {'status': 'reserved', 'reservation_expire_date': reservation_expire_date}}
@@ -160,6 +167,7 @@ if __name__ == "__main__":
     # db.match_utxo({'amount': 72111561})
 
     while True:
+        logger.info('Querying UTXO')
         all_utxos = get_utxos()
         db.check_all_utxos(all_utxos)
         sleep(20)
